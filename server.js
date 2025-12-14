@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
+import cors from "cors";
 import connectMongoDB from "./lib/connectMongoDb.js";
 import authRoutes from "./routes/auth.routes.js";
 import taskRoutes from "./routes/task.routes.js";
@@ -10,6 +11,13 @@ dotenv.config();
 const app = express();
 
 connectMongoDB();
+
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Vite default
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
