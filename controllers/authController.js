@@ -1,6 +1,6 @@
-// controllers/authController.js
 import User from "../models/User.js";
 import { generateToken } from "../lib/jwt.js";
+import { setAuthCookie, clearAuthCookie } from "../lib/cookies.js";
 
 export const register = async (req, res) => {
   try {
@@ -23,10 +23,10 @@ export const register = async (req, res) => {
     await user.save();
 
     const token = generateToken(user._id, user.role);
+    setAuthCookie(res, token); // <- centralized helper
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "User registered successfully",
-      token,
       user: {
         id: user._id,
         name: user.name,
@@ -35,18 +35,21 @@ export const register = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("REGISTER error:", error);
+    return res
+      .status(500)
+      .json({ message: "Server error", error: error.message });
   }
 };
-
 
 export const login = async (req, res) => {
   try {
     const data = req.body;
 
     if (!data || !data.email || !data.password) {
-      return res.status(400).json({ message: "Email and password required" });
+      return res
+        .status(400)
+        .json({ message: "Email and password required" });
     }
 
     const user = await User.findOne({ email: data.email });
@@ -60,10 +63,10 @@ export const login = async (req, res) => {
     }
 
     const token = generateToken(user._id, user.role);
+    setAuthCookie(res, token);
 
-    res.json({
+    return res.json({
       message: "Login successful",
-      token,
       user: {
         id: user._id,
         name: user.name,
@@ -72,7 +75,14 @@ export const login = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("LOGIN error:", error);
+    return res
+      .status(500)
+      .json({ message: "Server error", error: error.message });
   }
 };
 
+export const logout = (req, res) => {
+  clearAuthCookie(res);
+  return res.json({ message: "Logged out" });
+};
